@@ -1,6 +1,7 @@
 # PRIVATE CLASS: do not use directly
 class postgresql::params inherits postgresql::globals {
   $ensure                     = true
+  $enable                     = true
   $version                    = $globals_version
   $listen_addresses           = 'localhost'
   $ip_mask_deny_postgres_user = '0.0.0.0/0'

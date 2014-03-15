@@ -1,6 +1,7 @@
 # This installs a PostgreSQL server. See README.md for more details.
 class postgresql::server (
   $ensure                     = $postgresql::params::ensure,
+  $enable                     = $postgresql::params::enable,
 
   $version                    = $postgresql::params::version,
 
@@ -28,6 +29,7 @@ class postgresql::server (
   $psql_path                  = $postgresql::params::psql_path,
   $pg_hba_conf_path           = $postgresql::params::pg_hba_conf_path,
   $postgresql_conf_path       = $postgresql::params::postgresql_conf_path,
+  $confdir                    = $postgresql::params::confdir,
 
   $datadir                    = $postgresql::params::datadir,
   $xlogdir                    = $postgresql::params::xlogdir,

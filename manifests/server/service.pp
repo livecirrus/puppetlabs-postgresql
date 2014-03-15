@@ -1,12 +1,13 @@
 # PRIVATE CLASS: do not call directly
 class postgresql::server::service {
   $ensure           = $postgresql::server::ensure
+  $enable           = $postgresql::server::enable
   $service_name     = $postgresql::server::service_name
   $service_provider = $postgresql::server::service_provider
   $service_status   = $postgresql::server::service_status
   $user             = $postgresql::server::user
   $default_database = $postgresql::server::default_database
-
+  $confdir          = $postgresql::server::confdir
   $service_ensure = $ensure ? {
     present => true,
     absent  => false,
@@ -18,7 +19,7 @@ class postgresql::server::service {
   service { 'postgresqld':
     ensure    => $service_ensure,
     name      => $service_name,
-    enable    => $service_ensure,
+    enable    => $service_enable,
     provider  => $service_provider,
     hasstatus => true,
     status    => $service_status,
@@ -39,6 +40,14 @@ class postgresql::server::service {
       require         => Service['postgresqld'],
       before          => Anchor['postgresql::server::service::end']
     }
+  }
+
+  if($enable == 'manual' and $::osfamily == 'Debian') {
+    file {"${confdir}/start.conf":
+      content         => "manual",
+      require         => Service['postgresqld'],
+      before          => Anchor['postgresql::server::service::end']
+    }    
   }
 
   anchor { 'postgresql::server::service::end': }
