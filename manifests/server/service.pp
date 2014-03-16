@@ -8,6 +8,7 @@ class postgresql::server::service {
   $user             = $postgresql::server::user
   $default_database = $postgresql::server::default_database
   $confdir          = $postgresql::server::confdir
+  $version          = $postgresql::server::version
   $service_ensure = $ensure ? {
     present => true,
     absent  => false,
@@ -24,7 +25,7 @@ class postgresql::server::service {
     hasstatus => true,
     status    => $service_status,
   }
-
+  
   if($service_ensure) {
     # This blocks the class before continuing if chained correctly, making
     # sure the service really is 'up' before continuing.
@@ -41,6 +42,7 @@ class postgresql::server::service {
       before          => Anchor['postgresql::server::service::end']
     }
   }
+  
 
   if($enable == 'manual' and $::osfamily == 'Debian') {
     file {"${confdir}/start.conf":
@@ -48,7 +50,16 @@ class postgresql::server::service {
       require         => Service['postgresqld'],
       before          => Anchor['postgresql::server::service::end']
     }    
+    # the service won't be able to start via init script if start.conf is set to manual so we need to start it manually
+    if($service_ensure) {
+      exec {"pg_ctlcluster":
+        command => "/usr/bin/pg_ctlcluster ${version} main start",
+        creates => "/var/run/postgresql/${version}-main.pid",
+        require => File["${confdir}/start.conf"],
+        before => Postgresql::Validate_db_connection["validate_service_is_running"]
+      }
+    }
   }
-
+  
   anchor { 'postgresql::server::service::end': }
 }
