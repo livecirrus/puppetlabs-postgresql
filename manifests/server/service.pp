@@ -17,7 +17,7 @@ class postgresql::server::service {
 
   anchor { 'postgresql::server::service::begin': }
 
-  service { 'postgresqld':
+  service { 'postgresql':
     ensure    => $service_ensure,
     name      => $service_name,
     enable    => $service_enable,
@@ -25,7 +25,7 @@ class postgresql::server::service {
     hasstatus => true,
     status    => $service_status,
   }
-  
+
   if($service_ensure) {
     # This blocks the class before continuing if chained correctly, making
     # sure the service really is 'up' before continuing.
@@ -38,28 +38,36 @@ class postgresql::server::service {
       sleep           => 1,
       tries           => 60,
       create_db_first => false,
-      require         => Service['postgresqld'],
+      require         => Service['postgresql'],
       before          => Anchor['postgresql::server::service::end']
     }
   }
-  
 
-  if($enable == 'manual' and $::osfamily == 'Debian') {
-    file {"${confdir}/start.conf":
-      content         => "manual",
-      require         => Service['postgresqld'],
-      before          => Anchor['postgresql::server::service::end']
-    }    
-    # the service won't be able to start via init script if start.conf is set to manual so we need to start it manually
-    if($service_ensure) {
-      exec {"pg_ctlcluster":
-        command => "/usr/bin/pg_ctlcluster ${version} main start",
-        creates => "/var/run/postgresql/${version}-main.pid",
-        require => File["${confdir}/start.conf"],
-        before => Postgresql::Validate_db_connection["validate_service_is_running"]
+
+  if($::osfamily == 'Debian') {
+    if $enable == 'manual' {
+      file {"${confdir}/start.conf":
+        content         => "manual",
+        before          => Service['postgresql']
+      }
+      # the service won't be able to start via init script if start.conf is set to manual so we need to start it manually
+      if($service_ensure) {
+        exec {"pg_ctlcluster":
+          command => "/usr/bin/pg_ctlcluster ${version} main start",
+          creates => "/var/run/postgresql/${version}-main.pid",
+          require => File["${confdir}/start.conf"],
+          before => Postgresql::Validate_db_connection["validate_service_is_running"]
+        }
+      }
+    }
+    else
+    {
+      file {"${confdir}/start.conf":
+        content         => "auto",
+        before         => Service['postgresql']
       }
     }
   }
-  
+
   anchor { 'postgresql::server::service::end': }
 }
